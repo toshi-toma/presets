@@ -1,12 +1,24 @@
-const processCraConfig = (craWebpackConfig, storybookConfigDir) =>
-  craWebpackConfig.module.rules.reduce((rules, rule) => {
-    const { test, oneOf, include } = rule;
+const path = require('path');
+
+// This handles arrays in Webpack rule tests.
+const testMatch = (rule, string) => {
+  if (!rule.test) return false;
+  return Array.isArray(rule.test)
+    ? rule.test.some(test => test.test(string))
+    : rule.test.test(string);
+};
+
+const processCraConfig = (craWebpackConfig, options) => {
+  const configDir = path.resolve(options.configDir);
+
+  return craWebpackConfig.module.rules.reduce((rules, rule) => {
+    const { oneOf, include } = rule;
 
     // Add our `configDir` to support JSX and TypeScript in that folder.
-    if (test && test.test('.jsx')) {
+    if (testMatch(rule, '.jsx')) {
       const newRule = {
         ...rule,
-        include: [include, storybookConfigDir],
+        include: [include, configDir],
       };
       return [...rules, newRule];
     }
@@ -22,12 +34,41 @@ const processCraConfig = (craWebpackConfig, storybookConfigDir) =>
         ...rules,
         {
           oneOf: oneOf.map(oneOfRule => {
+            // EJS must be ignored here as this is used within Storybook.
             if (oneOfRule.loader && oneOfRule.loader.includes('file-loader')) {
-              // EJS must be ignored here as this is used within Storybook.
               return { ...oneOfRule, exclude: [...oneOfRule.exclude, /\.ejs$/] };
             }
+
+            // This rule causes conflicts with Storybook addons like `addon-info`.
+            if (testMatch(oneOfRule, '.css')) {
+              return {
+                ...oneOfRule,
+                exclude: [oneOfRule.exclude, /@storybook/],
+              };
+            }
+
+            // Target `babel-loader` and add user's Babel config.
+            if (
+              oneOfRule.loader &&
+              oneOfRule.loader.includes('babel-loader') &&
+              oneOfRule.test.test('.jsx')
+            ) {
+              const craBabelOptions = oneOfRule.options;
+              const { extends: _extends, plugins = [], presets = [] } = options.babelOptions;
+              return {
+                ...oneOfRule,
+                include: [oneOfRule.include, configDir],
+                options: {
+                  ...craBabelOptions,
+                  extends: _extends,
+                  plugins: [...craBabelOptions.plugins, ...plugins],
+                  presets: [...craBabelOptions.presets, ...presets],
+                },
+              };
+            }
+
             return oneOfRule.include
-              ? { ...oneOfRule, include: [oneOfRule.include, storybookConfigDir] }
+              ? { ...oneOfRule, include: [oneOfRule.include, configDir] }
               : oneOfRule;
           }),
         },
@@ -36,5 +77,6 @@ const processCraConfig = (craWebpackConfig, storybookConfigDir) =>
 
     return [...rules, rule];
   }, []);
+};
 
 module.exports = processCraConfig;

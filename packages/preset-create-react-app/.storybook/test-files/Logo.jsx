@@ -1,6 +1,18 @@
 import React from 'react';
-import { ReactComponent as Logo } from './assets/react-logo.svg';
+import PropTypes from 'prop-types';
+import { ReactComponent as LogoSvg } from './assets/react-logo.svg';
 
-const Button = () => <Logo height={128} />;
+const Logo = ({ height }) => <LogoSvg height={height} />;
 
-export default Button;
+Logo.defaultProps = {
+  height: 128,
+};
+
+Logo.propTypes = {
+  /**
+   * Logo height
+   */
+  height: PropTypes.number.isRequired,
+};
+
+export default Logo;

@@ -20,13 +20,17 @@
     "storybook": "start-storybook -p 8008"
   },
   "devDependencies": {
-    "@storybook/react": "^5.1.1",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
-    "react-scripts": "*"
+    "@storybook/addon-info": "5.2.0-beta.28",
+    "@storybook/react": "^5.2.0-beta.28",
+    "prop-types": "^15.7.2",
+    "react": "^16.9",
+    "react-dom": "^16.9",
+    "react-scripts": "*",
+    "typescript": "^3.5.3"
   },
   "peerDependencies": {
-    "@storybook/react": ">=5.3",
+    "@babel/core": ">=7",
+    "@storybook/react": ">=5.2",
     "@types/webpack": "*"
   },
   "dependencies": {
